@@ -1,0 +1,69 @@
+
+use types::Value;
+
+// Goal: Be able to parse https://github.com/edn-format/edn
+// Also extensible to help parse http://docs.datomic.com/query.html
+
+#[export]
+nil -> Value = "nil" {
+  Value::Nil
+}
+
+#[export]
+boolean -> Value =
+  "true" { Value::Boolean(true) } /
+  "false" { Value::Boolean(false) }
+
+digit = [0-9]
+digit_initial = [1-9]
+digits = (digit / digits)
+sign = "-" / "+"
+
+#[export]
+integer -> Value = i:$( sign? (digit_initial digit* / digit) ) {
+  Value::Integer(i.parse::<i32>().unwrap())
+}
+
+/*
+fraction = "." digits
+exp = ("e" / "E") (sign? digits)
+
+#[export]
+float = fraction exp?
+*/
+
+special_char = quote / tab                                                      // TODO: \newline, \return, \space and \tab
+quote = "\\\""
+tab = "\\tab"
+char = [^"] / special_char
+
+#[export]
+text -> Value = "\"" t:$(  char* ) "\"" {
+  Value::Text(t.to_string())
+}
+
+symbol_char_initial = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/]
+symbol_char_subsequent = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/] / [+.] / "-"     // TODO: Be more picky here
+
+#[export]
+symbol -> Value = s:$( symbol_char_initial symbol_char_subsequent* ) {
+  Value::Symbol(s.to_string())
+}
+
+keyword_char_initial = ":"
+keyword_char_subsequent = [a-z] / [A-Z] / [0-9] / "/"                           // TODO: More chars here?
+
+#[export]
+keyword -> Value = k:$( keyword_char_initial keyword_char_subsequent+ ) {
+  Value::Keyword(k.to_string())
+}
+
+#[export]
+list -> Value = "(" l:(whitespace? value)* ")" {
+  Value::List(l)
+}
+
+#[export]
+value -> Value = nil / boolean / integer / text / symbol / keyword / list       // TODO: Add float / set / vector / map
+
+whitespace = (" " / "\r" / "\n" / "\t")
