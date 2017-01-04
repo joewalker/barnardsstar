@@ -3,6 +3,8 @@ mod edn {
     include!(concat!(env!("OUT_DIR"), "/edn.rs"));
 }
 
+use std::collections::LinkedList;
+use std::iter::FromIterator;
 use self::edn::*;
 use types::Value;
 
@@ -99,64 +101,125 @@ fn test_value() {
     assert_eq!(value("\"hello world\"").unwrap(), Value::Text("hello world".to_string()));
     assert_eq!(value("$symbol").unwrap(), Value::Symbol("$symbol".to_string()));
     assert_eq!(value(":hello").unwrap(), Value::Keyword(":hello".to_string()));
-    assert_eq!(value("(1)").unwrap(), Value::List(vec![Value::Integer(1)]));
+    assert_eq!(value("[1]").unwrap(), Value::Vector(vec![Value::Integer(1)]));
     //assert_eq!(value("9.9").unwrap(), Value::Float(9.9f64));
 }
 
 #[test]
-fn test_list() {
-    let test = "()";
-    let value = Value::List(vec![
+fn test_vector() {
+    let test = "[]";
+    let value = Value::Vector(vec![
     ]);
-    assert_eq!(list(test).unwrap(), value);
+    assert_eq!(vector(test).unwrap(), value);
 
-    let test = "(1)";
-    let value = Value::List(vec![
+    let test = "[1]";
+    let value = Value::Vector(vec![
         Value::Integer(1),
     ]);
-    assert_eq!(list(test).unwrap(), value);
+    assert_eq!(vector(test).unwrap(), value);
 
-    let test = "(nil)";
-    let value = Value::List(vec![
+    let test = "[nil]";
+    let value = Value::Vector(vec![
         Value::Nil,
     ]);
-    assert_eq!(list(test).unwrap(), value);
+    assert_eq!(vector(test).unwrap(), value);
 
-    let test = "(1 2)";
-    let value = Value::List(vec![
+    let test = "[1 2]";
+    let value = Value::Vector(vec![
         Value::Integer(1),
         Value::Integer(2),
     ]);
-    assert_eq!(list(test).unwrap(), value);
+    assert_eq!(vector(test).unwrap(), value);
 
-    // let test = "(1 2 3.4)";
-    // let value = Value::List(vec![
+    // let test = "[1 2 3.4]";
+    // let value = Value::Vector(vec![
     //     Value::Integer(1),
     //     Value::Integer(2),
     //     Value::Float(3.4f64),
     // ]);
-    // assert_eq!(list(test).unwrap(), value);
+    // assert_eq!(vector(test).unwrap(), value);
 
-    let test = "(1 0 nil \"nil\")";
-    let value = Value::List(vec![
+    let test = "[1 0 nil \"nil\"]";
+    let value = Value::Vector(vec![
         Value::Integer(1),
         Value::Integer(0),
         Value::Nil,
         Value::Text("nil".to_string()),
     ]);
-    assert_eq!(list(test).unwrap(), value);
+    assert_eq!(vector(test).unwrap(), value);
 
-    let test = "(1 (0 nil) \"nil\")";
-    let value = Value::List(vec![
+    let test = "[1 [0 nil] \"nil\"]";
+    let value = Value::Vector(vec![
         Value::Integer(1),
-        Value::List(vec![
+        Value::Vector(vec![
             Value::Integer(0),
             Value::Nil,
         ]),
         Value::Text("nil".to_string()),
     ]);
+    assert_eq!(vector(test).unwrap(), value);
+
+    assert!(vector("[").is_err());
+    assert!(vector("(").is_err());
+    assert!(vector("1)").is_err());
+    assert!(vector("(1 (2 nil) \"hi\"").is_err());
+}
+
+#[test]
+fn test_list() {
+    let test = "()";
+    let value = Value::List(LinkedList::from_iter(vec![
+    ]));
     assert_eq!(list(test).unwrap(), value);
 
+    let test = "(1)";
+    let value = Value::List(LinkedList::from_iter(vec![
+        Value::Integer(1),
+    ]));
+    assert_eq!(list(test).unwrap(), value);
+
+    let test = "(nil)";
+    let value = Value::List(LinkedList::from_iter(vec![
+        Value::Nil,
+    ]));
+    assert_eq!(list(test).unwrap(), value);
+
+    let test = "(1 2)";
+    let value = Value::List(LinkedList::from_iter(vec![
+        Value::Integer(1),
+        Value::Integer(2),
+    ]));
+    assert_eq!(list(test).unwrap(), value);
+
+    // let test = "(1 2 3.4)";
+    // let value = Value::List(LinkedList::from_iter(vec![
+    //     Value::Integer(1),
+    //     Value::Integer(2),
+    //     Value::Float(3.4f64),
+    // ]));
+    // assert_eq!(list(test).unwrap(), value);
+
+    let test = "(1 0 nil \"nil\")";
+    let value = Value::List(LinkedList::from_iter(vec![
+        Value::Integer(1),
+        Value::Integer(0),
+        Value::Nil,
+        Value::Text("nil".to_string()),
+    ]));
+    assert_eq!(list(test).unwrap(), value);
+
+    let test = "(1 (0 nil) \"nil\")";
+    let value = Value::List(LinkedList::from_iter(vec![
+        Value::Integer(1),
+        Value::List(LinkedList::from_iter(vec![
+            Value::Integer(0),
+            Value::Nil,
+        ])),
+        Value::Text("nil".to_string()),
+    ]));
+    assert_eq!(list(test).unwrap(), value);
+
+    assert!(list("[").is_err());
     assert!(list("(").is_err());
     assert!(list("1)").is_err());
     assert!(list("(1 (2 nil) \"hi\"").is_err());

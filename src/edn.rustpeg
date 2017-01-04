@@ -1,4 +1,6 @@
 
+use std::collections::LinkedList;
+use std::iter::FromIterator;
 use types::Value;
 
 // Goal: Be able to parse https://github.com/edn-format/edn
@@ -59,12 +61,17 @@ keyword -> Value = k:$( keyword_char_initial keyword_char_subsequent+ ) {
 }
 
 #[export]
-list -> Value = "(" l:(whitespace? value)* ")" {
-  Value::List(l)
+list -> Value = "(" v:(whitespace? value)* ")" {
+  Value::List(LinkedList::from_iter(v))
+}
+
+#[export]
+vector -> Value = "[" v:(whitespace? value)* "]" {
+  Value::Vector(v)
 }
 
 #[export]
 value -> Value
-    = nil / boolean / integer / float / text / keyword / symbol / list          // TODO: Add set / vector / map
+    = nil / boolean / integer / float / text / keyword / symbol / list / vector // TODO: Add set / map
 
 whitespace = (" " / "\r" / "\n" / "\t")

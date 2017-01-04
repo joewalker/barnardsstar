@@ -1,4 +1,6 @@
 
+use std::collections::LinkedList;
+
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub enum Value {
@@ -9,5 +11,6 @@ pub enum Value {
     Text(String),
     Symbol(String),
     Keyword(String),
-    List(Vec<Value>),
+    Vector(Vec<Value>),
+    List(LinkedList<Value>),
 }
