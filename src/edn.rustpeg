@@ -24,13 +24,13 @@ integer -> Value = i:$( sign? (digit_initial digit* / digit) ) {
   Value::Integer(i.parse::<i32>().unwrap())
 }
 
-/*
 fraction = "." digits
 exp = ("e" / "E") (sign? digits)
 
 #[export]
-float = fraction exp?
-*/
+float -> Value = f:$( integer fraction? exp? ) {
+  Value::Float(f.parse::<f64>().unwrap())
+}
 
 special_char = quote / tab                                                      // TODO: \newline, \return, \space and \tab
 quote = "\\\""
@@ -43,7 +43,7 @@ text -> Value = "\"" t:$(  char* ) "\"" {
 }
 
 symbol_char_initial = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/]
-symbol_char_subsequent = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/] / [+.] / "-"     // TODO: Be more picky here
+symbol_char_subsequent = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/]                  // TODO: Be more picky here
 
 #[export]
 symbol -> Value = s:$( symbol_char_initial symbol_char_subsequent* ) {
@@ -64,6 +64,7 @@ list -> Value = "(" l:(whitespace? value)* ")" {
 }
 
 #[export]
-value -> Value = nil / boolean / integer / text / symbol / keyword / list       // TODO: Add float / set / vector / map
+value -> Value
+    = nil / boolean / integer / float / text / keyword / symbol / list          // TODO: Add set / vector / map
 
 whitespace = (" " / "\r" / "\n" / "\t")

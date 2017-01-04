@@ -3,8 +3,9 @@
 #[derive(PartialEq)]
 pub enum Value {
     Nil,
-    Integer(i32),
     Boolean(bool),
+    Integer(i32),
+    Float(f64),
     Text(String),
     Symbol(String),
     Keyword(String),
