@@ -34,7 +34,8 @@ exp = ("e" / "E") (sign? digits)
 //   Value::Float(f.parse::<f64>().unwrap())
 // }
 
-special_char = quote / tab                                                      // TODO: \newline, \return, \space and \tab
+// TODO: \newline, \return, \space and \tab
+special_char = quote / tab
 quote = "\\\""
 tab = "\\tab"
 char = [^"] / special_char
@@ -44,8 +45,9 @@ text -> Value = "\"" t:$(  char* ) "\"" {
   Value::Text(t.to_string())
 }
 
+// TODO: Be more picky here
 symbol_char_initial = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/]
-symbol_char_subsequent = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/]                  // TODO: Be more picky here
+symbol_char_subsequent = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/] / "-"
 
 #[export]
 symbol -> Value = s:$( symbol_char_initial symbol_char_subsequent* ) {
@@ -53,7 +55,8 @@ symbol -> Value = s:$( symbol_char_initial symbol_char_subsequent* ) {
 }
 
 keyword_char_initial = ":"
-keyword_char_subsequent = [a-z] / [A-Z] / [0-9] / "/"                           // TODO: More chars here?
+// TODO: More chars here?
+keyword_char_subsequent = [a-z] / [A-Z] / [0-9] / "/"
 
 #[export]
 keyword -> Value = k:$( keyword_char_initial keyword_char_subsequent+ ) {
@@ -61,17 +64,17 @@ keyword -> Value = k:$( keyword_char_initial keyword_char_subsequent+ ) {
 }
 
 #[export]
-list -> Value = "(" v:(whitespace? value)* ")" {
+list -> Value = "(" __ v:(__ value)* __ ")" {
   Value::List(LinkedList::from_iter(v))
 }
 
 #[export]
-vector -> Value = "[" v:(whitespace? value)* "]" {
+vector -> Value = "[" __ v:(__ value)* __ "]" {
   Value::Vector(v)
 }
 
 #[export]
-set -> Value = "#{" v:(whitespace? value)* "}" {
+set -> Value = "#{" __ v:(__ value)* __ "}" {
   Value::Set(BTreeSet::from_iter(v))
 }
 
@@ -80,7 +83,7 @@ pair -> (Value, Value) = k:(value) " " v:(value) ", "? {
 }
 
 #[export]
-map -> Value = "{" v:(pair)* "}" {
+map -> Value = "{" __ v:(pair)* __ "}" {
   Value::Map(BTreeMap::from_iter(v))
 }
 
@@ -90,3 +93,5 @@ value -> Value
     = nil / boolean / integer / text / keyword / symbol / list / vector / map / set
 
 whitespace = (" " / "\r" / "\n" / "\t")
+
+__ = whitespace*

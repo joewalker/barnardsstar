@@ -8,29 +8,30 @@ mod edn {
 use std::collections::{BTreeSet, BTreeMap, LinkedList};
 use std::iter::FromIterator;
 use self::edn::*;
-use types::{Value, Pair};
+use types::Value::*;
+use types::Pair;
 
 #[test]
 fn test_nil() {
-    assert_eq!(nil("nil").unwrap(), Value::Nil);
+    assert_eq!(nil("nil").unwrap(), Nil);
 
     assert!(nil("true").is_err());
 }
 
 #[test]
 fn test_boolean() {
-    assert_eq!(boolean("true").unwrap(), Value::Boolean(true));
-    assert_eq!(boolean("false").unwrap(), Value::Boolean(false));
+    assert_eq!(boolean("true").unwrap(), Boolean(true));
+    assert_eq!(boolean("false").unwrap(), Boolean(false));
 
     assert!(boolean("nil").is_err());
 }
 
 #[test]
 fn test_integer() {
-    assert_eq!(integer("0").unwrap(), Value::Integer(0i32));
-    assert_eq!(integer("1").unwrap(), Value::Integer(1i32));
-    assert_eq!(integer("999").unwrap(), Value::Integer(999i32));
-    assert_eq!(integer("-999").unwrap(), Value::Integer(-999i32));
+    assert_eq!(integer("0").unwrap(), Integer(0i32));
+    assert_eq!(integer("1").unwrap(), Integer(1i32));
+    assert_eq!(integer("999").unwrap(), Integer(999i32));
+    assert_eq!(integer("-999").unwrap(), Integer(-999i32));
 
     assert!(integer("nil").is_err());
 }
@@ -39,10 +40,10 @@ fn test_integer() {
 https://users.rust-lang.org/t/hashmap-key-cant-be-float-number-type-why/7892
 #[test]
 fn test_float() {
-    assert_eq!(float("0").unwrap(), Value::Float(0f64));
-    assert_eq!(float("1.1").unwrap(), Value::Float(1.1f64));
-    assert_eq!(float("9.9e9").unwrap(), Value::Float(9.9e9f64));
-    assert_eq!(float("-9.9E-9").unwrap(), Value::Float(-9.9E-9f64));
+    assert_eq!(float("0").unwrap(), Float(0f64));
+    assert_eq!(float("1.1").unwrap(), Float(1.1f64));
+    assert_eq!(float("9.9e9").unwrap(), Float(9.9e9f64));
+    assert_eq!(float("-9.9E-9").unwrap(), Float(-9.9E-9f64));
 
     assert!(float("nil").is_err());
 }
@@ -50,8 +51,8 @@ fn test_float() {
 
 #[test]
 fn test_text() {
-    assert_eq!(text("\"hello world\"").unwrap(), Value::Text("hello world".to_string()));
-    assert_eq!(text("\"\"").unwrap(), Value::Text("".to_string()));
+    assert_eq!(text("\"hello world\"").unwrap(), Text("hello world".to_string()));
+    assert_eq!(text("\"\"").unwrap(), Text("".to_string()));
 
     assert!(text("\"").is_err());
     assert!(text("nil").is_err());
@@ -59,81 +60,81 @@ fn test_text() {
 
 #[test]
 fn test_symbol() {
-    assert_eq!(symbol("r_r").unwrap(), Value::Symbol("r_r".to_string()));
-    assert_eq!(symbol("$symbol").unwrap(), Value::Symbol("$symbol".to_string()));
-    assert_eq!(symbol("hello").unwrap(), Value::Symbol("hello".to_string()));
+    assert_eq!(symbol("r_r").unwrap(), Symbol("r_r".to_string()));
+    assert_eq!(symbol("$symbol").unwrap(), Symbol("$symbol".to_string()));
+    assert_eq!(symbol("hello").unwrap(), Symbol("hello".to_string()));
 }
 
 #[test]
 fn test_keyword() {
-    assert_eq!(keyword(":hello/world").unwrap(), Value::Keyword(":hello/world".to_string()));
-    assert_eq!(keyword(":symbol").unwrap(), Value::Keyword(":symbol".to_string()));
-    assert_eq!(keyword(":hello").unwrap(), Value::Keyword(":hello".to_string()));
+    assert_eq!(keyword(":hello/world").unwrap(), Keyword(":hello/world".to_string()));
+    assert_eq!(keyword(":symbol").unwrap(), Keyword(":symbol".to_string()));
+    assert_eq!(keyword(":hello").unwrap(), Keyword(":hello".to_string()));
 }
 
 #[test]
 fn test_value() {
-    assert_eq!(value("nil").unwrap(), Value::Nil);
-    assert_eq!(value("true").unwrap(), Value::Boolean(true));
-    assert_eq!(value("1").unwrap(), Value::Integer(1i32));
-    assert_eq!(value("\"hello world\"").unwrap(), Value::Text("hello world".to_string()));
-    assert_eq!(value("$symbol").unwrap(), Value::Symbol("$symbol".to_string()));
-    assert_eq!(value(":hello").unwrap(), Value::Keyword(":hello".to_string()));
-    assert_eq!(value("[1]").unwrap(), Value::Vector(vec![Value::Integer(1)]));
-    //assert_eq!(value("9.9").unwrap(), Value::Float(9.9f64));
+    assert_eq!(value("nil").unwrap(), Nil);
+    assert_eq!(value("true").unwrap(), Boolean(true));
+    assert_eq!(value("1").unwrap(), Integer(1i32));
+    assert_eq!(value("\"hello world\"").unwrap(), Text("hello world".to_string()));
+    assert_eq!(value("$symbol").unwrap(), Symbol("$symbol".to_string()));
+    assert_eq!(value(":hello").unwrap(), Keyword(":hello".to_string()));
+    assert_eq!(value("[1]").unwrap(), Vector(vec![Integer(1)]));
+    //assert_eq!(value("9.9").unwrap(), Float(9.9f64));
 }
 
 #[test]
 fn test_vector() {
     let test = "[]";
-    let value = Value::Vector(vec![
+    let value = Vector(vec![
     ]);
     assert_eq!(vector(test).unwrap(), value);
 
     let test = "[1]";
-    let value = Value::Vector(vec![
-        Value::Integer(1),
+    let value = Vector(vec![
+        Integer(1),
     ]);
     assert_eq!(vector(test).unwrap(), value);
 
     let test = "[nil]";
-    let value = Value::Vector(vec![
-        Value::Nil,
+    let value = Vector(vec![
+        Nil,
     ]);
     assert_eq!(vector(test).unwrap(), value);
 
     let test = "[1 2]";
-    let value = Value::Vector(vec![
-        Value::Integer(1),
-        Value::Integer(2),
+    let value = Vector(vec![
+        Integer(1),
+        Integer(2),
     ]);
     assert_eq!(vector(test).unwrap(), value);
 
     // let test = "[1 2 3.4]";
-    // let value = Value::Vector(vec![
-    //     Value::Integer(1),
-    //     Value::Integer(2),
-    //     Value::Float(3.4f64),
+    // let value = Vector(vec![
+    //     Integer(1),
+    //     Integer(2),
+    //     Float(3.4f64),
     // ]);
     // assert_eq!(vector(test).unwrap(), value);
 
     let test = "[1 0 nil \"nil\"]";
-    let value = Value::Vector(vec![
-        Value::Integer(1),
-        Value::Integer(0),
-        Value::Nil,
-        Value::Text("nil".to_string()),
+    let value = Vector(vec![
+        Integer(1),
+        Integer(0),
+        Nil,
+        Text("nil".to_string()),
     ]);
     assert_eq!(vector(test).unwrap(), value);
 
     let test = "[1 [0 nil] \"nil\"]";
-    let value = Value::Vector(vec![
-        Value::Integer(1),
-        Value::Vector(vec![
-            Value::Integer(0),
-            Value::Nil,
+    let value = Vector(vec![
+        Integer(1),
+        Vector(vec![
+            Integer(0),
+            Nil,
         ]),
-        Value::Text("nil".to_string()),
+        Text("nil".to_string()),
     ]);
     assert_eq!(vector(test).unwrap(), value);
 
@@ -146,54 +147,54 @@ fn test_vector() {
 #[test]
 fn test_list() {
     let test = "()";
-    let value = Value::List(LinkedList::from_iter(vec![
+    let value = List(LinkedList::from_iter(vec![
     ]));
     assert_eq!(list(test).unwrap(), value);
 
     let test = "(1)";
-    let value = Value::List(LinkedList::from_iter(vec![
-        Value::Integer(1),
+    let value = List(LinkedList::from_iter(vec![
+        Integer(1),
     ]));
     assert_eq!(list(test).unwrap(), value);
 
     let test = "(nil)";
-    let value = Value::List(LinkedList::from_iter(vec![
-        Value::Nil,
+    let value = List(LinkedList::from_iter(vec![
+        Nil,
     ]));
     assert_eq!(list(test).unwrap(), value);
 
     let test = "(1 2)";
-    let value = Value::List(LinkedList::from_iter(vec![
-        Value::Integer(1),
-        Value::Integer(2),
+    let value = List(LinkedList::from_iter(vec![
+        Integer(1),
+        Integer(2),
     ]));
     assert_eq!(list(test).unwrap(), value);
 
     // let test = "(1 2 3.4)";
-    // let value = Value::List(LinkedList::from_iter(vec![
-    //     Value::Integer(1),
-    //     Value::Integer(2),
-    //     Value::Float(3.4f64),
+    // let value = List(LinkedList::from_iter(vec![
+    //     Integer(1),
+    //     Integer(2),
+    //     Float(3.4f64),
     // ]));
     // assert_eq!(list(test).unwrap(), value);
 
     let test = "(1 0 nil \"nil\")";
-    let value = Value::List(LinkedList::from_iter(vec![
-        Value::Integer(1),
-        Value::Integer(0),
-        Value::Nil,
-        Value::Text("nil".to_string()),
+    let value = List(LinkedList::from_iter(vec![
+        Integer(1),
+        Integer(0),
+        Nil,
+        Text("nil".to_string()),
     ]));
     assert_eq!(list(test).unwrap(), value);
 
     let test = "(1 (0 nil) \"nil\")";
-    let value = Value::List(LinkedList::from_iter(vec![
-        Value::Integer(1),
-        Value::List(LinkedList::from_iter(vec![
-            Value::Integer(0),
-            Value::Nil,
+    let value = List(LinkedList::from_iter(vec![
+        Integer(1),
+        List(LinkedList::from_iter(vec![
+            Integer(0),
+            Nil,
         ])),
-        Value::Text("nil".to_string()),
+        Text("nil".to_string()),
     ]));
     assert_eq!(list(test).unwrap(), value);
 
@@ -206,54 +207,54 @@ fn test_list() {
 #[test]
 fn test_set() {
     let test = "#{}";
-    let value = Value::Set(BTreeSet::from_iter(vec![
+    let value = Set(BTreeSet::from_iter(vec![
     ]));
     assert_eq!(set(test).unwrap(), value);
 
     let test = "#{1}";
-    let value = Value::Set(BTreeSet::from_iter(vec![
-        Value::Integer(1),
+    let value = Set(BTreeSet::from_iter(vec![
+        Integer(1),
     ]));
     assert_eq!(set(test).unwrap(), value);
 
     let test = "#{nil}";
-    let value = Value::Set(BTreeSet::from_iter(vec![
-        Value::Nil,
+    let value = Set(BTreeSet::from_iter(vec![
+        Nil,
     ]));
     assert_eq!(set(test).unwrap(), value);
 
     let test = "#{2 1}";
-    let value = Value::Set(BTreeSet::from_iter(vec![
-        Value::Integer(1),
-        Value::Integer(2),
+    let value = Set(BTreeSet::from_iter(vec![
+        Integer(1),
+        Integer(2),
     ]));
     assert_eq!(set(test).unwrap(), value);
 
     // let test = "#{3.4 2 1}";
-    // let value = Value::Set(BTreeSet::from_iter(vec![
-    //     Value::Integer(1),
-    //     Value::Integer(2),
-    //     Value::Float(3.4f64),
+    // let value = Set(BTreeSet::from_iter(vec![
+    //     Integer(1),
+    //     Integer(2),
+    //     Float(3.4f64),
     // ]));
     // assert_eq!(set(test).unwrap(), value);
 
     let test = "#{1 0 nil \"nil\"}";
-    let value = Value::Set(BTreeSet::from_iter(vec![
-        Value::Nil,
-        Value::Integer(0),
-        Value::Integer(1),
-        Value::Text("nil".to_string()),
+    let value = Set(BTreeSet::from_iter(vec![
+        Nil,
+        Integer(0),
+        Integer(1),
+        Text("nil".to_string()),
     ]));
     assert_eq!(set(test).unwrap(), value);
 
     let test = "#{1 #{0 nil} \"nil\"}";
-    let value = Value::Set(BTreeSet::from_iter(vec![
-        Value::Integer(1),
-        Value::Set(BTreeSet::from_iter(vec![
-            Value::Nil,
-            Value::Integer(0),
+    let value = Set(BTreeSet::from_iter(vec![
+        Integer(1),
+        Set(BTreeSet::from_iter(vec![
+            Nil,
+            Integer(0),
         ])),
-        Value::Text("nil".to_string()),
+        Text("nil".to_string()),
     ]));
     assert_eq!(set(test).unwrap(), value);
 
@@ -266,48 +267,48 @@ fn test_set() {
 #[test]
 fn test_map() {
     let test = "{}";
-    let value = Value::Map(BTreeMap::from_iter(vec![
+    let value = Map(BTreeMap::from_iter(vec![
     ]));
     assert_eq!(map(test).unwrap(), value);
 
     let test = "{\"a\" 1}";
-    let value = Value::Map(BTreeMap::from_iter(vec![
-        (Value::Text("a".to_string()), Value::Integer(1)),
+    let value = Map(BTreeMap::from_iter(vec![
+        (Text("a".to_string()), Integer(1)),
     ]));
     assert_eq!(map(test).unwrap(), value);
 
     let test = "{nil 1, \"b\" 2}";
-    let value = Value::Map(BTreeMap::from_iter(vec![
-        (Value::Nil, Value::Integer(1)),
-        (Value::Text("b".to_string()), Value::Integer(2)),
+    let value = Map(BTreeMap::from_iter(vec![
+        (Nil, Integer(1)),
+        (Text("b".to_string()), Integer(2)),
     ]));
     assert_eq!(map(test).unwrap(), value);
 
     let test = "{nil 1, \"b\" 2, \"a\" 3}";
-    let value = Value::Map(BTreeMap::from_iter(vec![
-        (Value::Nil, Value::Integer(1)),
-        (Value::Text("a".to_string()), Value::Integer(3)),
-        (Value::Text("b".to_string()), Value::Integer(2)),
+    let value = Map(BTreeMap::from_iter(vec![
+        (Nil, Integer(1)),
+        (Text("a".to_string()), Integer(3)),
+        (Text("b".to_string()), Integer(2)),
     ]));
     assert_eq!(map(test).unwrap(), value);
 
     let test = "{:a 1, $b {:b/a nil, :b/b #{nil 5}}, c [1 2], d (3 4)}";
-    let value = Value::Map(BTreeMap::from_iter(vec![
-        (Value::Keyword(":a".to_string()), Value::Integer(1)),
-        (Value::Symbol("$b".to_string()), Value::Map(BTreeMap::from_iter(vec![
-            (Value::Keyword(":b/a".to_string()), Value::Nil),
-            (Value::Keyword(":b/b".to_string()), Value::Set(BTreeSet::from_iter(vec![
-                Value::Nil,
-                Value::Integer(5),
+    let value = Map(BTreeMap::from_iter(vec![
+        (Keyword(":a".to_string()), Integer(1)),
+        (Symbol("$b".to_string()), Map(BTreeMap::from_iter(vec![
+            (Keyword(":b/a".to_string()), Nil),
+            (Keyword(":b/b".to_string()), Set(BTreeSet::from_iter(vec![
+                Nil,
+                Integer(5),
             ]))),
         ]))),
-        (Value::Symbol("c".to_string()), Value::Vector(vec![
-            Value::Integer(1),
-            Value::Integer(2),
+        (Symbol("c".to_string()), Vector(vec![
+            Integer(1),
+            Integer(2),
         ])),
-        (Value::Symbol("d".to_string()), Value::List(LinkedList::from_iter(vec![
-            Value::Integer(3),
-            Value::Integer(4),
+        (Symbol("d".to_string()), List(LinkedList::from_iter(vec![
+            Integer(3),
+            Integer(4),
         ]))),
     ]));
     assert_eq!(map(test).unwrap(), value);
@@ -320,29 +321,45 @@ fn test_map() {
 
 #[test]
 fn test_query() {
-    let test = "[:find ?id ?reason ?ts :in $ :where [?id :session/startReason ?reason ?tx] [?tx :db/txInstant ?ts]]";
-        // (not-join [?id]
-        //     [?id :session/endReason _])
+    let test = "[
+        :find ?id ?reason ?ts
+        :in $
+        :where
+            [?id :session/startReason ?reason ?tx]
+            [?tx :db/txInstant ?ts]
+            (not-join [?id] [?id :session/endReason _])
+        ]";
 
-    let reply = Value::Vector(vec![
-        Value::Keyword(":find".to_string()),
-        Value::Symbol("?id".to_string()),
-        Value::Symbol("?reason".to_string()),
-        Value::Symbol("?ts".to_string()),
-        Value::Keyword(":in".to_string()),
-        Value::Symbol("$".to_string()),
-        Value::Keyword(":where".to_string()),
-        Value::Vector(vec![
-            Value::Symbol("?id".to_string()),
-            Value::Keyword(":session/startReason".to_string()),
-            Value::Symbol("?reason".to_string()),
-            Value::Symbol("?tx".to_string()),
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Symbol("?id".to_string()),
+        Symbol("?reason".to_string()),
+        Symbol("?ts".to_string()),
+        Keyword(":in".to_string()),
+        Symbol("$".to_string()),
+        Keyword(":where".to_string()),
+        Vector(vec![
+            Symbol("?id".to_string()),
+            Keyword(":session/startReason".to_string()),
+            Symbol("?reason".to_string()),
+            Symbol("?tx".to_string()),
         ]),
-        Value::Vector(vec![
-            Value::Symbol("?tx".to_string()),
-            Value::Keyword(":db/txInstant".to_string()),
-            Value::Symbol("?ts".to_string()),
+        Vector(vec![
+            Symbol("?tx".to_string()),
+            Keyword(":db/txInstant".to_string()),
+            Symbol("?ts".to_string()),
         ]),
+        List(LinkedList::from_iter(vec![
+            Symbol("not-join".to_string()),
+            Vector(vec![
+                Symbol("?id".to_string()),
+            ]),
+            Vector(vec![
+                Symbol("?id".to_string()),
+                Keyword(":session/endReason".to_string()),
+                Symbol("_".to_string()),
+            ]),
+        ])),
     ]);
     assert_eq!(value(test).unwrap(), reply);
 }
