@@ -1,12 +1,14 @@
+// TODO: Can't we do this just for tests?
+#![allow(unused_imports)]
 
 mod edn {
     include!(concat!(env!("OUT_DIR"), "/edn.rs"));
 }
 
-use std::collections::LinkedList;
+use std::collections::{BTreeSet, BTreeMap, LinkedList};
 use std::iter::FromIterator;
 use self::edn::*;
-use types::Value;
+use types::{Value, Pair};
 
 /*
 #[test]
@@ -60,6 +62,8 @@ fn test_integer() {
     assert!(integer("nil").is_err());
 }
 
+/*
+https://users.rust-lang.org/t/hashmap-key-cant-be-float-number-type-why/7892
 #[test]
 fn test_float() {
     assert_eq!(float("0").unwrap(), Value::Float(0f64));
@@ -69,6 +73,7 @@ fn test_float() {
 
     assert!(float("nil").is_err());
 }
+*/
 
 #[test]
 fn test_text() {
@@ -223,4 +228,119 @@ fn test_list() {
     assert!(list("(").is_err());
     assert!(list("1)").is_err());
     assert!(list("(1 (2 nil) \"hi\"").is_err());
+}
+
+#[test]
+fn test_set() {
+    let test = "#{}";
+    let value = Value::Set(BTreeSet::from_iter(vec![
+    ]));
+    assert_eq!(set(test).unwrap(), value);
+
+    let test = "#{1}";
+    let value = Value::Set(BTreeSet::from_iter(vec![
+        Value::Integer(1),
+    ]));
+    assert_eq!(set(test).unwrap(), value);
+
+    let test = "#{nil}";
+    let value = Value::Set(BTreeSet::from_iter(vec![
+        Value::Nil,
+    ]));
+    assert_eq!(set(test).unwrap(), value);
+
+    let test = "#{2 1}";
+    let value = Value::Set(BTreeSet::from_iter(vec![
+        Value::Integer(1),
+        Value::Integer(2),
+    ]));
+    assert_eq!(set(test).unwrap(), value);
+
+    // let test = "#{3.4 2 1}";
+    // let value = Value::Set(BTreeSet::from_iter(vec![
+    //     Value::Integer(1),
+    //     Value::Integer(2),
+    //     Value::Float(3.4f64),
+    // ]));
+    // assert_eq!(set(test).unwrap(), value);
+
+    let test = "#{1 0 nil \"nil\"}";
+    let value = Value::Set(BTreeSet::from_iter(vec![
+        Value::Nil,
+        Value::Integer(0),
+        Value::Integer(1),
+        Value::Text("nil".to_string()),
+    ]));
+    assert_eq!(set(test).unwrap(), value);
+
+    let test = "#{1 #{0 nil} \"nil\"}";
+    let value = Value::Set(BTreeSet::from_iter(vec![
+        Value::Integer(1),
+        Value::Set(BTreeSet::from_iter(vec![
+            Value::Nil,
+            Value::Integer(0),
+        ])),
+        Value::Text("nil".to_string()),
+    ]));
+    assert_eq!(set(test).unwrap(), value);
+
+    assert!(set("#{").is_err());
+    assert!(set("}").is_err());
+    assert!(set("1}").is_err());
+    assert!(set("#{1 #{2 nil} \"hi\"").is_err());
+}
+
+#[test]
+fn test_map() {
+    let test = "{}";
+    let value = Value::Map(BTreeMap::from_iter(vec![
+    ]));
+    assert_eq!(map(test).unwrap(), value);
+
+    let test = "{\"a\" 1}";
+    let value = Value::Map(BTreeMap::from_iter(vec![
+        (Value::Text("a".to_string()), Value::Integer(1)),
+    ]));
+    assert_eq!(map(test).unwrap(), value);
+
+    let test = "{nil 1, \"b\" 2}";
+    let value = Value::Map(BTreeMap::from_iter(vec![
+        (Value::Nil, Value::Integer(1)),
+        (Value::Text("b".to_string()), Value::Integer(2)),
+    ]));
+    assert_eq!(map(test).unwrap(), value);
+
+    let test = "{nil 1, \"b\" 2, \"a\" 3}";
+    let value = Value::Map(BTreeMap::from_iter(vec![
+        (Value::Nil, Value::Integer(1)),
+        (Value::Text("a".to_string()), Value::Integer(3)),
+        (Value::Text("b".to_string()), Value::Integer(2)),
+    ]));
+    assert_eq!(map(test).unwrap(), value);
+
+    let test = "{:a 1, $b {:b/a nil, :b/b #{nil 5}}, c [1 2], d (3 4)}";
+    let value = Value::Map(BTreeMap::from_iter(vec![
+        (Value::Keyword(":a".to_string()), Value::Integer(1)),
+        (Value::Symbol("$b".to_string()), Value::Map(BTreeMap::from_iter(vec![
+            (Value::Keyword(":b/a".to_string()), Value::Nil),
+            (Value::Keyword(":b/b".to_string()), Value::Set(BTreeSet::from_iter(vec![
+                Value::Nil,
+                Value::Integer(5),
+            ]))),
+        ]))),
+        (Value::Symbol("c".to_string()), Value::Vector(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ])),
+        (Value::Symbol("d".to_string()), Value::List(LinkedList::from_iter(vec![
+            Value::Integer(3),
+            Value::Integer(4),
+        ]))),
+    ]));
+    assert_eq!(map(test).unwrap(), value);
+
+    assert!(map("#{").is_err());
+    assert!(map("}").is_err());
+    assert!(map("1}").is_err());
+    assert!(map("#{1 #{2 nil} \"hi\"").is_err());
 }

@@ -1,7 +1,7 @@
 
-use std::collections::LinkedList;
+use std::collections::{BTreeSet, BTreeMap, LinkedList};
 use std::iter::FromIterator;
-use types::Value;
+use types::{Pair, Value};
 
 // Goal: Be able to parse https://github.com/edn-format/edn
 // Also extensible to help parse http://docs.datomic.com/query.html
@@ -29,10 +29,10 @@ integer -> Value = i:$( sign? (digit_initial digit* / digit) ) {
 fraction = "." digits
 exp = ("e" / "E") (sign? digits)
 
-#[export]
-float -> Value = f:$( integer fraction? exp? ) {
-  Value::Float(f.parse::<f64>().unwrap())
-}
+// #[export]
+// float -> Value = f:$( integer fraction? exp? ) {
+//   Value::Float(f.parse::<f64>().unwrap())
+// }
 
 special_char = quote / tab                                                      // TODO: \newline, \return, \space and \tab
 quote = "\\\""
@@ -71,7 +71,22 @@ vector -> Value = "[" v:(whitespace? value)* "]" {
 }
 
 #[export]
+set -> Value = "#{" v:(whitespace? value)* "}" {
+  Value::Set(BTreeSet::from_iter(v))
+}
+
+pair -> (Value, Value) = k:(value) " " v:(value) ", "? {
+  (k, v)
+}
+
+#[export]
+map -> Value = "{" v:(pair)* "}" {
+  Value::Map(BTreeMap::from_iter(v))
+}
+
+// TODO: Decide about float
+#[export]
 value -> Value
-    = nil / boolean / integer / float / text / keyword / symbol / list / vector // TODO: Add set / map
+    = nil / boolean / integer / text / keyword / symbol / list / vector / map / set
 
 whitespace = (" " / "\r" / "\n" / "\t")
