@@ -10,33 +10,6 @@ use std::iter::FromIterator;
 use self::edn::*;
 use types::{Value, Pair};
 
-/*
-#[test]
-fn test_query() {
-    assert!(variable("?r").is_ok());
-
-    assert!(find_spec(":find ?r").is_ok());
-    assert!(query(":fund").is_err());
-}
-
-#[test]
-fn test_active_sessions() {
-    const ACTIVE_SESSIONS: &'static str = "
-:find ?id ?reason ?ts
-:in $
-:where
-[?id :session/startReason ?reason ?tx]
-[?tx :db/txInstant ?ts]
-    ";
-    // (not-join [?id]
-    //     [?id :session/endReason _])
-
-    let reply = find_spec(ACTIVE_SESSIONS);
-    println!("reply = {:?}", reply);
-    assert!(reply.is_ok());
-}
-*/
-
 #[test]
 fn test_nil() {
     assert_eq!(nil("nil").unwrap(), Value::Nil);
@@ -343,4 +316,33 @@ fn test_map() {
     assert!(map("}").is_err());
     assert!(map("1}").is_err());
     assert!(map("#{1 #{2 nil} \"hi\"").is_err());
+}
+
+#[test]
+fn test_query() {
+    let test = "[:find ?id ?reason ?ts :in $ :where [?id :session/startReason ?reason ?tx] [?tx :db/txInstant ?ts]]";
+        // (not-join [?id]
+        //     [?id :session/endReason _])
+
+    let reply = Value::Vector(vec![
+        Value::Keyword(":find".to_string()),
+        Value::Symbol("?id".to_string()),
+        Value::Symbol("?reason".to_string()),
+        Value::Symbol("?ts".to_string()),
+        Value::Keyword(":in".to_string()),
+        Value::Symbol("$".to_string()),
+        Value::Keyword(":where".to_string()),
+        Value::Vector(vec![
+            Value::Symbol("?id".to_string()),
+            Value::Keyword(":session/startReason".to_string()),
+            Value::Symbol("?reason".to_string()),
+            Value::Symbol("?tx".to_string()),
+        ]),
+        Value::Vector(vec![
+            Value::Symbol("?tx".to_string()),
+            Value::Keyword(":db/txInstant".to_string()),
+            Value::Symbol("?ts".to_string()),
+        ]),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
 }
