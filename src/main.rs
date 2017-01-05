@@ -1,31 +1,13 @@
 #![allow(dead_code)]
 
+extern crate ordered_float;
+
 mod tests;
 mod types;
 
 fn main() {
-    // let mut parser = Parser::new(ACTIVE_SESSIONS);
-    //
-    // loop {
-    //     let parsed = parser.read();
-    //
-    //     if parsed.is_none() {
-    //         break;
-    //     }
-    //
-    //     println!("{:?}", parsed.unwrap());
-    // }
+    println!("Use cargo test");
 }
-
-const ACTIVE_SESSIONS: &'static str = "#{
-    :find ?id ?reason ?ts
-    :in $
-    :where
-    [?id :session/startReason ?reason ?tx]
-    [?tx :db/txInstant ?ts]
-    (not-join [?id]
-        [?id :session/endReason _])
-}";
 
 const ENDED_SESSIONS: &'static str = "
     :find ?id ?endReason ?ts

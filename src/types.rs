@@ -1,7 +1,7 @@
 
 use std::collections::{BTreeSet, BTreeMap, LinkedList};
 use std::cmp::{Ordering, Ord, PartialOrd};
-// use num_traits::Float;
+use ordered_float::OrderedFloat;
 
 /// We're using BTree{Set, Map} rather than Hash{Set, Map} because the BTree variants implement Hash
 /// (unlike the Hash variants which don't in order to preserve O(n) hashing time which is hard given
@@ -13,7 +13,8 @@ pub enum Value {
     Nil,
     Boolean(bool),
     Integer(i32),
-    //Float(f64), Maybe use https://crates.io/crates/ordered-float?
+    // https://users.rust-lang.org/t/hashmap-key-cant-be-float-number-type-why/7892
+    Float(OrderedFloat<f64>),
     Text(String),
     Symbol(String),
     Keyword(String),
@@ -39,7 +40,7 @@ impl Ord for Value {
             Nil             => match *other { Nil             => Ordering::Equal, _ => ord_order },
             Boolean(bs)     => match *other { Boolean(bo)     => bo.cmp(&bs), _ => ord_order },
             Integer(is)     => match *other { Integer(io)     => io.cmp(&is), _ => ord_order },
-            // Float(ref fs)   => match *other { Float(ref fo)   => fo.cmp(&fs), _ => ord_order },
+            Float(ref fs)   => match *other { Float(ref fo)   => fo.cmp(&fs), _ => ord_order },
             Text(ref ts)    => match *other { Text(ref to)    => to.cmp(&ts), _ => ord_order },
             Symbol(ref ss)  => match *other { Symbol(ref so)  => so.cmp(&ss), _ => ord_order },
             Keyword(ref ks) => match *other { Keyword(ref ko) => ko.cmp(&ks), _ => ord_order },
@@ -51,13 +52,13 @@ impl Ord for Value {
     }
 }
 
-/// There has to be a better way to do `as i32` for
+// TODO: There has to be a better way to do `as i32` for Value
 fn to_ord(value: &Value) -> i32 {
     match *value {
         Nil => 0,
         Boolean(_) => 1,
         Integer(_) => 2,
-        //Float(_) => 3,
+        Float(_) => 3,
         Text(_) => 4,
         Symbol(_) => 5,
         Keyword(_) => 6,
