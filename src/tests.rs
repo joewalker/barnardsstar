@@ -322,8 +322,12 @@ fn test_map() {
     assert!(map("#{1 #{2 nil} \"hi\"").is_err());
 }
 
+/// The test_query_* functions contain the queries taken from the old clojure datomish.
+/// 2 changes have been applied, which should be checked and maybe fixed
+/// TODO: Decide if these queries should be placed in a vector wrapper. Is that implied?
+/// Secondly, see note in test_query_starred_pages on the use of '
 #[test]
-fn test_query() {
+fn test_query_active_sessions() {
     let test = "[
         :find ?id ?reason ?ts
         :in $
@@ -331,7 +335,7 @@ fn test_query() {
             [?id :session/startReason ?reason ?tx]
             [?tx :db/txInstant ?ts]
             (not-join [?id] [?id :session/endReason _])
-        ]";
+    ]";
 
     let reply = Vector(vec![
         Keyword(":find".to_string()),
@@ -366,3 +370,401 @@ fn test_query() {
     ]);
     assert_eq!(value(test).unwrap(), reply);
 }
+
+#[test]
+fn test_query_ended_sessions() {
+    let test = "[
+        :find ?id ?endReason ?ts
+        :in $
+        :where
+            [?id :session/endReason ?endReason ?tx]
+            [?tx :db/txInstant ?ts]
+    ]";
+
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Symbol("?id".to_string()),
+        Symbol("?endReason".to_string()),
+        Symbol("?ts".to_string()),
+        Keyword(":in".to_string()),
+        Symbol("$".to_string()),
+        Keyword(":where".to_string()),
+        Vector(vec![
+            Symbol("?id".to_string()),
+            Keyword(":session/endReason".to_string()),
+            Symbol("?endReason".to_string()),
+            Symbol("?tx".to_string()),
+        ]),
+        Vector(vec![
+            Symbol("?tx".to_string()),
+            Keyword(":db/txInstant".to_string()),
+            Symbol("?ts".to_string()),
+        ]),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
+}
+
+#[test]
+fn test_query_starred_pages() {
+    // TODO: The original query had added "'" like `:find '[?url` and `since '[$ ?since] '[$]`
+    let test = "[
+        :find [?url ?title ?starredOn]
+        :in (if since [$ ?since] [$])
+        :where where
+    ]";
+
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Vector(vec![
+            Symbol("?url".to_string()),
+            Symbol("?title".to_string()),
+            Symbol("?starredOn".to_string()),
+        ]),
+        Keyword(":in".to_string()),
+        List(LinkedList::from_iter(vec![
+            Symbol("if".to_string()),
+            Symbol("since".to_string()),
+            Vector(vec![
+                Symbol("$".to_string()),
+                Symbol("?since".to_string()),
+            ]),
+            Vector(vec![
+                Symbol("$".to_string()),
+            ]),
+        ])),
+        Keyword(":where".to_string()),
+        Symbol("where".to_string()),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
+}
+
+#[test]
+fn test_query_saved_pages() {
+    let test = "[
+        :find ?page ?url ?title ?excerpt
+        :in $
+        :where
+            [?save :save/page ?page]
+            [?save :save/savedAt ?instant]
+            [?page :page/url ?url]
+            [(get-else $ ?save :save/title \"\") ?title]
+            [(get-else $ ?save :save/excerpt \"\") ?excerpt]
+    ]";
+
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Symbol("?page".to_string()),
+        Symbol("?url".to_string()),
+        Symbol("?title".to_string()),
+        Symbol("?excerpt".to_string()),
+        Keyword(":in".to_string()),
+        Symbol("$".to_string()),
+        Keyword(":where".to_string()),
+        Vector(vec![
+            Symbol("?save".to_string()),
+            Keyword(":save/page".to_string()),
+            Symbol("?page".to_string()),
+        ]),
+        Vector(vec![
+            Symbol("?save".to_string()),
+            Keyword(":save/savedAt".to_string()),
+            Symbol("?instant".to_string()),
+        ]),
+        Vector(vec![
+            Symbol("?page".to_string()),
+            Keyword(":page/url".to_string()),
+            Symbol("?url".to_string()),
+        ]),
+        Vector(vec![
+            List(LinkedList::from_iter(vec![
+                Symbol("get-else".to_string()),
+                Symbol("$".to_string()),
+                Symbol("?save".to_string()),
+                Keyword(":save/title".to_string()),
+                Text("".to_string()),
+            ])),
+            Symbol("?title".to_string()),
+        ]),
+        Vector(vec![
+            List(LinkedList::from_iter(vec![
+                Symbol("get-else".to_string()),
+                Symbol("$".to_string()),
+                Symbol("?save".to_string()),
+                Keyword(":save/excerpt".to_string()),
+                Text("".to_string()),
+            ])),
+            Symbol("?excerpt".to_string()),
+        ]),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
+}
+
+#[test]
+fn test_query_pages_matching_string_1() {
+    /*
+    // Original query
+    :find '[?url ?title]
+    :in '[$]
+    :where [
+        [(list 'fulltext '$ #{:page/url :page/title} string) '[[?page]]]
+        '[(get-else $ ?page :page/url \"\") ?url]
+        '[(get-else $ ?page :page/title \"\") ?title]
+    ]
+    */
+    let test = "[
+        :find [?url ?title]
+        :in [$]
+        :where [
+            [(list fulltext $ #{:page/url :page/title} string) [[?page]]]
+            [(get-else $ ?page :page/url \"\") ?url]
+            [(get-else $ ?page :page/title \"\") ?title]
+        ]
+    ]";
+
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Vector(vec![
+            Symbol("?url".to_string()),
+            Symbol("?title".to_string()),
+        ]),
+        Keyword(":in".to_string()),
+        Vector(vec![
+            Symbol("$".to_string()),
+        ]),
+        Keyword(":where".to_string()),
+        Vector(vec![
+            Vector(vec![
+                List(LinkedList::from_iter(vec![
+                    Symbol("list".to_string()),
+                    Symbol("fulltext".to_string()),
+                    Symbol("$".to_string()),
+                    Set(BTreeSet::from_iter(vec![
+                        Keyword(":page/url".to_string()),
+                        Keyword(":page/title".to_string()),
+                    ])),
+                    Symbol("string".to_string()),
+                ])),
+                Vector(vec![
+                    Vector(vec![
+                        Symbol("?page".to_string()),
+                    ]),
+                ]),
+            ]),
+            Vector(vec![
+                List(LinkedList::from_iter(vec![
+                    Symbol("get-else".to_string()),
+                    Symbol("$".to_string()),
+                    Symbol("?page".to_string()),
+                    Keyword(":page/url".to_string()),
+                    Text("".to_string()),
+                ])),
+                Symbol("?url".to_string()),
+            ]),
+            Vector(vec![
+                List(LinkedList::from_iter(vec![
+                    Symbol("get-else".to_string()),
+                    Symbol("$".to_string()),
+                    Symbol("?page".to_string()),
+                    Keyword(":page/title".to_string()),
+                    Text("".to_string()),
+                ])),
+                Symbol("?title".to_string()),
+            ]),
+        ]),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
+}
+
+#[test]
+fn test_query_pages_matching_string_2() {
+    /*
+    // Original query
+    :find '[?url ?title ?excerpt]
+    :in '[$]
+    :where [
+        [(list 'fulltext '$ #{:save/title :save/excerpt :save/content} string) '[[?save]]]
+        '[?save :save/page ?page]
+        '[?page :page/url ?url]
+        '[(get-else $ ?save :save/title \"\") ?title]
+        '[(get-else $ ?save :save/excerpt \"\") ?excerpt]
+    ]
+    */
+    let test = "[
+        :find [?url ?title ?excerpt]
+        :in [$]
+        :where [
+            [(list fulltext $ #{:save/title :save/excerpt :save/content} string) [[?save]]]
+            [?save :save/page ?page]
+            [?page :page/url ?url]
+            [(get-else $ ?save :save/title \"\") ?title]
+            [(get-else $ ?save :save/excerpt \"\") ?excerpt]
+        ]
+    ]";
+
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Vector(vec![
+            Symbol("?url".to_string()),
+            Symbol("?title".to_string()),
+            Symbol("?excerpt".to_string()),
+        ]),
+        Keyword(":in".to_string()),
+        Vector(vec![
+            Symbol("$".to_string()),
+        ]),
+        Keyword(":where".to_string()),
+        Vector(vec![
+            Vector(vec![
+                List(LinkedList::from_iter(vec![
+                    Symbol("list".to_string()),
+                    Symbol("fulltext".to_string()),
+                    Symbol("$".to_string()),
+                    Set(BTreeSet::from_iter(vec![
+                        Keyword(":save/title".to_string()),
+                        Keyword(":save/excerpt".to_string()),
+                        Keyword(":save/content".to_string()),
+                    ])),
+                    Symbol("string".to_string()),
+                ])),
+                Vector(vec![
+                    Vector(vec![
+                        Symbol("?save".to_string()),
+                    ]),
+                ]),
+            ]),
+            Vector(vec![
+                Symbol("?save".to_string()),
+                Keyword(":save/page".to_string()),
+                Symbol("?page".to_string()),
+            ]),
+            Vector(vec![
+                Symbol("?page".to_string()),
+                Keyword(":page/url".to_string()),
+                Symbol("?url".to_string()),
+            ]),
+            Vector(vec![
+                List(LinkedList::from_iter(vec![
+                    Symbol("get-else".to_string()),
+                    Symbol("$".to_string()),
+                    Symbol("?save".to_string()),
+                    Keyword(":save/title".to_string()),
+                    Text("".to_string()),
+                ])),
+                Symbol("?title".to_string()),
+            ]),
+            Vector(vec![
+                List(LinkedList::from_iter(vec![
+                    Symbol("get-else".to_string()),
+                    Symbol("$".to_string()),
+                    Symbol("?save".to_string()),
+                    Keyword(":save/excerpt".to_string()),
+                    Text("".to_string()),
+                ])),
+                Symbol("?excerpt".to_string()),
+            ]),
+        ]),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
+}
+
+#[test]
+fn test_query_visited() {
+    /*
+    // Original query
+    :find '[?url ?title (max ?time)]
+    :in (if since '[$ ?since] '[$])
+    :where where
+    */
+    let test = "[
+        :find [?url ?title (max ?time)]
+        :in (if since [$ ?since] [$])
+        :where where
+    ]";
+
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Vector(vec![
+            Symbol("?url".to_string()),
+            Symbol("?title".to_string()),
+            List(LinkedList::from_iter(vec![
+                Symbol("max".to_string()),
+                Symbol("?time".to_string()),
+            ])),
+        ]),
+        Keyword(":in".to_string()),
+        List(LinkedList::from_iter(vec![
+            Symbol("if".to_string()),
+            Symbol("since".to_string()),
+            Vector(vec![
+                Symbol("$".to_string()),
+                Symbol("?since".to_string()),
+            ]),
+            Vector(vec![
+                Symbol("$".to_string()),
+            ]),
+        ])),
+        Keyword(":where".to_string()),
+        Symbol("where".to_string()),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
+}
+
+#[test]
+fn test_query_find_title() {
+    /*
+    // Original query
+    :find ?title .
+    :in $ ?url
+    :where
+        [?page :page/url ?url]
+        [(get-else $ ?page :page/title \"\") ?title]
+    */
+    let test = "[
+        :find ?title .
+        :in $ ?url
+        :where
+            [?page :page/url ?url]
+            [(get-else $ ?page :page/title \"\") ?title]
+    ]";
+
+    let reply = Vector(vec![
+        Keyword(":find".to_string()),
+        Symbol("?title".to_string()),
+        Symbol(".".to_string()),
+        Keyword(":in".to_string()),
+        Symbol("$".to_string()),
+        Symbol("?url".to_string()),
+        Keyword(":where".to_string()),
+        Vector(vec![
+            Symbol("?page".to_string()),
+            Keyword(":page/url".to_string()),
+            Symbol("?url".to_string()),
+        ]),
+        Vector(vec![
+            List(LinkedList::from_iter(vec![
+                Symbol("get-else".to_string()),
+                Symbol("$".to_string()),
+                Symbol("?page".to_string()),
+                Keyword(":page/title".to_string()),
+                Text("".to_string()),
+            ])),
+            Symbol("?title".to_string()),
+        ]),
+    ]);
+    assert_eq!(value(test).unwrap(), reply);
+}
+
+/*
+// Handy templates for creating test cases follow:
+
+Text("".to_string()),
+
+Vector(vec![
+]),
+
+List(LinkedList::from_iter(vec![
+])),
+
+Set(BTreeSet::from_iter(vec![
+])),
+*/

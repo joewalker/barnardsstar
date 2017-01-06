@@ -32,6 +32,7 @@ impl PartialOrd for Value {
     }
 }
 
+// TODO: Check we follow the equality rules at the bottom of https://github.com/edn-format/edn
 impl Ord for Value {
     fn cmp(&self, other: &Value) -> Ordering {
 
