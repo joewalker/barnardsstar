@@ -18,13 +18,10 @@ boolean -> Value =
   "false" { Value::Boolean(false) }
 
 digit = [0-9]
-digit_initial = [1-9]
-digits = (digit / digits)
 sign = "-" / "+"
-int = sign? (digit_initial digit* / digit)
 
 #[export]
-integer -> Value = i:$( int ) {
+integer -> Value = i:$( sign? digit+ ) {
   Value::Integer(i.parse::<i32>().unwrap())
 }
 
@@ -32,8 +29,10 @@ frac =     sign? digit+ "." digit+
 exp =      sign? digit+            ("e" / "E") sign? digit+
 frac_exp = sign? digit+ "." digit+ ("e" / "E") sign? digit+
 
+// The order here is important - frac_exp must come before (exp / frac) or the
+// parser assumes exp or frac when the float is really a frac_exp and fails
 #[export]
-float -> Value = f:$( frac / exp / frac_exp ) {
+float -> Value = f:$( frac_exp / exp / frac ) {
   Value::Float(OrderedFloat(f.parse::<f64>().unwrap()))
 }
 
@@ -90,10 +89,11 @@ map -> Value = "{" __ v:(pair)* __ "}" {
   Value::Map(BTreeMap::from_iter(v))
 }
 
-// TODO: Decide about float
+// It's important that float comes before integer or the parser assumes that
+// floats are integers and fails to parse
 #[export]
 value -> Value
-    = nil / boolean / integer / float / text / keyword / symbol /
+    = nil / boolean / float / integer / text / keyword / symbol /
       list / vector / map / set
 
 whitespace = (" " / "\r" / "\n" / "\t")

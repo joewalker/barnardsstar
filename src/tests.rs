@@ -42,8 +42,8 @@ fn test_float() {
     assert_eq!(float("111.222").unwrap(), Float(OrderedFloat(111.222f64)));
     assert_eq!(float("3e4").unwrap(), Float(OrderedFloat(3e4f64)));
     assert_eq!(float("-55e-66").unwrap(), Float(OrderedFloat(-55e-66f64)));
-    // assert_eq!(float("77.88e99").unwrap(), Float(OrderedFloat(77.88e99f64)));
-    // assert_eq!(float("-9.9E-9").unwrap(), Float(OrderedFloat(-9.9E-9f64)));
+    assert_eq!(float("77.88e99").unwrap(), Float(OrderedFloat(77.88e99f64)));
+    assert_eq!(float("-9.9E-9").unwrap(), Float(OrderedFloat(-9.9E-9f64)));
 
     assert!(float("nil").is_err());
 }
@@ -80,8 +80,7 @@ fn test_value() {
     assert_eq!(value("$symbol").unwrap(), Symbol("$symbol".to_string()));
     assert_eq!(value(":hello").unwrap(), Keyword(":hello".to_string()));
     assert_eq!(value("[1]").unwrap(), Vector(vec![Integer(1)]));
-    // TODO: Why is this a parse error from a value context but not from a float context?
-    // assert_eq!(value("111.222").unwrap(), Float(OrderedFloat(111.222f64)));
+    assert_eq!(value("111.222").unwrap(), Float(OrderedFloat(111.222f64)));
 }
 
 #[test]
@@ -110,13 +109,13 @@ fn test_vector() {
     ]);
     assert_eq!(vector(test).unwrap(), value);
 
-    // let test = "[1 2 3.4]";
-    // let value = Vector(vec![
-    //     Integer(1),
-    //     Integer(2),
-    //     Float(3.4f64),
-    // ]);
-    // assert_eq!(vector(test).unwrap(), value);
+    let test = "[1 2 3.4]";
+    let value = Vector(vec![
+        Integer(1),
+        Integer(2),
+        Float(OrderedFloat(3.4f64)),
+    ]);
+    assert_eq!(vector(test).unwrap(), value);
 
     let test = "[1 0 nil \"nil\"]";
     let value = Vector(vec![
@@ -170,13 +169,13 @@ fn test_list() {
     ]));
     assert_eq!(list(test).unwrap(), value);
 
-    // let test = "(1 2 3.4)";
-    // let value = List(LinkedList::from_iter(vec![
-    //     Integer(1),
-    //     Integer(2),
-    //     Float(3.4f64),
-    // ]));
-    // assert_eq!(list(test).unwrap(), value);
+    let test = "(1 2 3.4)";
+    let value = List(LinkedList::from_iter(vec![
+        Integer(1),
+        Integer(2),
+        Float(OrderedFloat(3.4f64)),
+    ]));
+    assert_eq!(list(test).unwrap(), value);
 
     let test = "(1 0 nil \"nil\")";
     let value = List(LinkedList::from_iter(vec![
@@ -223,6 +222,10 @@ fn test_set() {
     ]));
     assert_eq!(set(test).unwrap(), value);
 
+    // These tests assume the implementation of Ord for Value, (specifically the sort order which
+    // isn't part of the spec) ideally we'd just test for set contents, however since the API
+    // (BTreeSet) assumes sorting this seems pointless.
+    // See the notes in types.rs for why we use BTreeSet rather than HashSet
     let test = "#{2 1}";
     let value = Set(BTreeSet::from_iter(vec![
         Integer(1),
@@ -230,13 +233,13 @@ fn test_set() {
     ]));
     assert_eq!(set(test).unwrap(), value);
 
-    // let test = "#{3.4 2 1}";
-    // let value = Set(BTreeSet::from_iter(vec![
-    //     Integer(1),
-    //     Integer(2),
-    //     Float(3.4f64),
-    // ]));
-    // assert_eq!(set(test).unwrap(), value);
+    let test = "#{3.4 2 1}";
+    let value = Set(BTreeSet::from_iter(vec![
+        Integer(1),
+        Integer(2),
+        Float(OrderedFloat(3.4f64)),
+    ]));
+    assert_eq!(set(test).unwrap(), value);
 
     let test = "#{1 0 nil \"nil\"}";
     let value = Set(BTreeSet::from_iter(vec![
