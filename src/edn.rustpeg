@@ -13,20 +13,20 @@ use ordered_float::OrderedFloat;
 
 #[export]
 nil -> Value = "nil" {
-  Value::Nil
+    Value::Nil
 }
 
 #[export]
 boolean -> Value =
-  "true" { Value::Boolean(true) } /
-  "false" { Value::Boolean(false) }
+    "true" { Value::Boolean(true) } /
+    "false" { Value::Boolean(false) }
 
 digit = [0-9]
 sign = "-" / "+"
 
 #[export]
 integer -> Value = i:$( sign? digit+ ) {
-  Value::Integer(i.parse::<i32>().unwrap())
+    Value::Integer(i.parse::<i32>().unwrap())
 }
 
 frac =     sign? digit+ "." digit+
@@ -37,7 +37,7 @@ frac_exp = sign? digit+ "." digit+ ("e" / "E") sign? digit+
 // parser assumes exp or frac when the float is really a frac_exp and fails
 #[export]
 float -> Value = f:$( frac_exp / exp / frac ) {
-  Value::Float(OrderedFloat(f.parse::<f64>().unwrap()))
+    Value::Float(OrderedFloat(f.parse::<f64>().unwrap()))
 }
 
 // TODO: \newline, \return, \space and \tab
@@ -48,7 +48,7 @@ char = [^"] / special_char
 
 #[export]
 text -> Value = "\"" t:$(  char* ) "\"" {
-  Value::Text(t.to_string())
+    Value::Text(t.to_string())
 }
 
 // TODO: Be more picky here
@@ -57,7 +57,7 @@ symbol_char_subsequent = [a-z] / [A-Z] / [0-9] / [*!_?$%&=<>/.] / "-"
 
 #[export]
 symbol -> Value = s:$( symbol_char_initial symbol_char_subsequent* ) {
-  Value::Symbol(s.to_string())
+    Value::Symbol(s.to_string())
 }
 
 keyword_char_initial = ":"
@@ -66,38 +66,39 @@ keyword_char_subsequent = [a-z] / [A-Z] / [0-9] / "/"
 
 #[export]
 keyword -> Value = k:$( keyword_char_initial keyword_char_subsequent+ ) {
-  Value::Keyword(k.to_string())
+    Value::Keyword(k.to_string())
 }
 
 #[export]
 list -> Value = "(" __ v:(__ value)* __ ")" {
-  Value::List(LinkedList::from_iter(v))
+    Value::List(LinkedList::from_iter(v))
 }
 
 #[export]
 vector -> Value = "[" __ v:(__ value)* __ "]" {
-  Value::Vector(v)
+    Value::Vector(v)
 }
 
 #[export]
 set -> Value = "#{" __ v:(__ value)* __ "}" {
-  Value::Set(BTreeSet::from_iter(v))
+    Value::Set(BTreeSet::from_iter(v))
 }
 
 pair -> (Value, Value) = k:(value) " " v:(value) ", "? {
-  (k, v)
+    (k, v)
 }
 
 #[export]
 map -> Value = "{" __ v:(pair)* __ "}" {
-  Value::Map(BTreeMap::from_iter(v))
+    Value::Map(BTreeMap::from_iter(v))
 }
 
 // It's important that float comes before integer or the parser assumes that
 // floats are integers and fails to parse
 #[export]
 value -> Value
-    = nil / boolean / float / integer / text / keyword / symbol /
+    = nil / boolean / float / integer / text /
+      keyword / symbol /
       list / vector / map / set
 
 whitespace = (" " / "\r" / "\n" / "\t")
