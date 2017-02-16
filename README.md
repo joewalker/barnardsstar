@@ -1,4 +1,4 @@
 # barnardsstar
 
-An experimental query parser for Datomish
-This project got merged into https://github.com/mozilla/mentat/tree/rust/edn
+This project became the [EDN parser](https://github.com/mozilla/mentat/tree/rust/edn) in [Project Mentat](https://github.com/mozilla/mentat). Further development continues there.
+
